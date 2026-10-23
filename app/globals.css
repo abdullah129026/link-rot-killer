@@ -1,0 +1,17 @@
+/* Neutral base styles. The real visual system lands with the design
+   pass later in the build phase; this is a placeholder. */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  color: #111;
+  background: #fff;
+}
