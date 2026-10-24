@@ -103,6 +103,18 @@ function fakeStore() {
     async listFindingsForScore(d, scanId) {
       return d.findings.filter((f) => f.scan_id === scanId);
     },
+    // Triage carryover: fingerprint -> state from the previous finished
+    // scan of the same site. The fake mirrors the real rule: ignored
+    // carries over, everything else starts open.
+    async getTriageCarryover(d, scanId) {
+      const scan = d.scans.get(scanId);
+      if (!scan || !scan.site_id) return new Map();
+      const prev = [...d.scans.values()]
+        .filter((s) => s.site_id === scan.site_id && s.status === 'done' && s.id !== scanId)
+        .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
+      if (!prev) return new Map();
+      return new Map(d.findings.filter((f) => f.scan_id === prev.id).map((f) => [f.fingerprint, f.state]));
+    },
     async setScanDone(d, scanId, health) {
       Object.assign(d.scans.get(scanId), { status: 'done', health_score: health });
     },
@@ -247,4 +259,39 @@ test('max_pages trims page discovery', async () => {
   await runTick({ db, store, fetchPage, check, budgetMs: 60000 }, 's1');
   assert.equal(db.targets.filter((t) => t.kind === 'page').length, 1);
   assert.ok(db.scans.get('s1').stats.notices.includes('cap_reached'));
+});
+
+test('triage carryover: ignored findings from the previous scan stay ignored', async () => {
+  const { db, store } = fakeStore();
+  db.scans.set('sp', {
+    id: 'sp', site_id: 'site1', status: 'done', seed_url: 'https://example.com/',
+    stats: {}, max_pages: 200, started_at: '2026-10-23T00:00:00Z',
+  });
+  db.scans.set('s1', {
+    id: 's1', site_id: 'site1', status: 'crawling', seed_url: 'https://example.com/',
+    stats: {}, max_pages: 200, started_at: '2026-10-24T00:00:00Z',
+  });
+  db.targets.push({
+    id: 't0', scan_id: 's1', url: 'https://example.com/', normalized_url: 'https://example.com/',
+    kind: 'page', depth: 0, host: 'example.com', status: 'pending', claimed_at: null, not_before: null,
+  });
+  // The previous scan ignored this exact finding (site1, normalized url,
+  // kind link, reason http_4xx). A fixed one would regress to open.
+  db.findings.push({
+    scan_id: 'sp', fingerprint: 'site1|https://example.com/dead|link|http_4xx',
+    target_url: 'https://example.com/dead', kind: 'link', reason: 'http_4xx',
+    severity: 'error', impact_score: 40, state: 'ignored', sources: [],
+  });
+  const fetchPage = async (url) => {
+    if (url === 'https://example.com/dead') return { status: 404, headers: htmlHeaders(), error: null };
+    return { status: 200, headers: htmlHeaders(), body: '<a href="/dead">dead page</a>', finalUrl: url, error: null };
+  };
+  const check = async () => ({ verdict: 'ok', statusCode: 200 });
+  let r = await runTick({ db, store, fetchPage, check, budgetMs: 60000 }, 's1');
+  assert.equal(r.ticked, true);
+  r = await runTick({ db, store, fetchPage, check, budgetMs: 60000 }, 's1');
+  assert.equal(r.done, true);
+  const f = db.findings.find((x) => x.scan_id === 's1' && x.target_url === 'https://example.com/dead');
+  assert.ok(f, 'the reappearing finding was written');
+  assert.equal(f.state, 'ignored');
 });
