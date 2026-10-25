@@ -492,3 +492,8 @@ footer.foot {
     width: 100%;
   }
 }
+
+@media print {
+  .topbar, .noprint, .foot { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+}

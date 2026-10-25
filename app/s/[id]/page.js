@@ -109,10 +109,12 @@ export default async function ScanPage({ params, searchParams }) {
           </div>
         )}
 
-        {owner && done && (
+        {done && (
           <div className="ownerbar">
-            <a className="btn ghost small" href={"/api/scans/" + id + "/csv"}>Download CSV</a>
-            <RescanButton scanId={id} />
+            <a className="btn ghost small" href={'/s/' + id + '/report'}>View report</a>
+            <a className="btn ghost small" href={'/api/scans/' + id + '/pdf'}>Download PDF</a>
+            {owner && <a className="btn ghost small" href={'/api/scans/' + id + '/csv'}>Download CSV</a>}
+            {owner && <RescanButton scanId={id} />}
           </div>
         )}
 
