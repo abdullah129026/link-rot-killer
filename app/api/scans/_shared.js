@@ -1,5 +1,6 @@
 import { dbFromEnv, getScanWithSite } from '@/lib/db.js';
 import { ownsScan, claimCookieName } from '@/lib/scan.js';
+import { sessionUser } from '@/lib/supabase-server.js';
 
 // Shared route plumbing: every scan route needs the DB, the scan with its
 // site, and (for mutations) the owner check. Reads stay public by
@@ -13,10 +14,11 @@ export function noDb() {
   return json({ error: 'Database not configured' }, 503);
 }
 
-// Auth arrives with the scheduling slice; until then every scan is
-// anonymous and ownership comes from the claim cookie alone.
-export function sessionUserId() {
-  return null;
+// Signed-in user id from the Supabase session cookie, or null. Reads the
+// session through @supabase/ssr; a missing config means anonymous only.
+export async function sessionUserId() {
+  const user = await sessionUser();
+  return user ? user.id : null;
 }
 
 export async function loadScan(scanId) {
@@ -32,12 +34,12 @@ export async function loadScan(scanId) {
   return { db, scan };
 }
 
-export function isOwner(req, scan) {
+export async function isOwner(req, scan) {
   const cookieToken = req.cookies.get(claimCookieName(scan.id))?.value;
-  return ownsScan(scan, { cookieToken, userId: sessionUserId() });
+  return ownsScan(scan, { cookieToken, userId: await sessionUserId() });
 }
 
-export function forbidIfNotOwner(req, scan) {
-  if (!isOwner(req, scan)) return json({ error: 'Not the scan owner' }, 403);
+export async function forbidIfNotOwner(req, scan) {
+  if (!(await isOwner(req, scan))) return json({ error: 'Not the scan owner' }, 403);
   return null;
 }

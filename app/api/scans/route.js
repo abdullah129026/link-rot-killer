@@ -33,7 +33,7 @@ export async function POST(req) {
     throw e;
   }
 
-  const userId = sessionUserId();
+  const userId = await sessionUserId();
   const since = startOfUtcDay();
   if (userId) {
     const n = await countSignedScansSince(db, userId, since);

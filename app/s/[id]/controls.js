@@ -169,3 +169,46 @@ export function RescanButton({ scanId, label }) {
     </button>
   );
 }
+
+// GitHub issue button: the owner types owner/repo, the server files the
+// issue with the saved token. Failures name the fix (repo name, token
+// scope) instead of dumping the API error.
+export function GithubIssueButton({ scanId }) {
+  const [repo, setRepo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  async function file() {
+    setBusy(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/scans/" + scanId + "/github-issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Issue filing failed");
+      setResult(data);
+    } catch (e) {
+      setResult({ error: e.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      <input
+        value={repo}
+        onChange={(e) => setRepo(e.target.value)}
+        placeholder="owner/repo"
+        aria-label="GitHub repo"
+        style={{ fontSize: 13, padding: "6px 8px" }}
+      />
+      <button className="btn ghost small" disabled={busy || !repo.trim()} onClick={file}>
+        {busy ? "Filing..." : "Create GitHub issue"}
+      </button>
+      {result && result.url && <a href={result.url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>Issue #{result.number}</a>}
+      {result && result.error && <span style={{ fontSize: 13, color: "var(--muted)" }}>{result.error}</span>}
+    </span>
+  );
+}

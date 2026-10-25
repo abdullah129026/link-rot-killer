@@ -12,7 +12,7 @@ export async function POST(req, { params }) {
   if (loaded.response) return loaded.response;
   const { db, scan } = loaded;
 
-  const forbidden = forbidIfNotOwner(req, scan);
+  const forbidden = await forbidIfNotOwner(req, scan);
   if (forbidden) return forbidden;
   if (scan.status === 'done' || scan.status === 'failed') {
     return json({ ticked: false, status: scan.status });

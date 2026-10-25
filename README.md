@@ -30,16 +30,31 @@ Run in the Supabase SQL editor, in order:
 1. `supabase/migrations/0001_schema.sql` — the seven tables, indexes,
    RLS (enabled, no policies: default deny), and explicit grants to
    `service_role` only.
+2. `supabase/migrations/0002_github_token_rpc.sql` — the encrypted GitHub
+   token RPCs (pgp_sym_encrypt/decrypt, execute to `service_role` only).
 
-Later migrations keep the same order prefix (`0002_`, `0003_`, ...).
+Later migrations keep the same order prefix (`0003_`, ...).
 
 ## Env vars
 
 - `SUPABASE_URL` — Supabase project settings, API section.
-- `SUPABASE_ANON_KEY` — same place, the anon public key.
+- `NEXT_PUBLIC_SUPABASE_URL` — the same URL, exposed to the browser for
+  magic-link sign-in.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — same place, the anon public key.
 - `SUPABASE_SERVICE_ROLE_KEY` — same place, the service role key. Keep it secret.
 - `CRON_SECRET` — a random string you generate. Gates the cron route.
 - `GITHUB_TOKEN_ENCRYPTION_KEY` — a random string you generate. Encrypts stored GitHub tokens.
+
+## Scheduling notes
+
+The cron route `GET /api/cron/tick` (bearer `CRON_SECRET`) runs daily at
+03:00 UTC on the Vercel Hobby plan, which fires cron at most once a day
+and hard-caps functions at 10 seconds. Each tick advances active scans
+oldest first inside a 7 second budget and starts due scheduled scans
+(daily/weekly per site). A big site therefore takes days unattended; the
+scan page states that honestly, and a watched scan finishes in real time.
+An external free scheduler (e.g. cron-job.org) can call the same route
+more often with the same bearer secret.
 
 ## Milestones
 

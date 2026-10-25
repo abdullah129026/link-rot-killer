@@ -11,7 +11,7 @@ export async function POST(req, { params }) {
   if (loaded.response) return loaded.response;
   const { db, scan } = loaded;
 
-  const forbidden = forbidIfNotOwner(req, scan);
+  const forbidden = await forbidIfNotOwner(req, scan);
   if (forbidden) return forbidden;
   if (!originOk(req)) return json({ error: 'Bad origin' }, 403);
   if (!scan.site_id) return json({ error: 'This scan has no site to re-scan' }, 400);

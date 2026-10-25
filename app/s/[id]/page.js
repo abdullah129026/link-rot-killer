@@ -11,7 +11,7 @@ import {
   GROUP_DEFS,
 } from "@/lib/scan.js";
 import { healthScore } from "@/lib/crawl/score.js";
-import { ScanLive, StatusPill, TriageButtons, GroupBulkActions, RescanButton } from "./controls";
+import { ScanLive, StatusPill, TriageButtons, GroupBulkActions, RescanButton, GithubIssueButton } from "./controls";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +115,7 @@ export default async function ScanPage({ params, searchParams }) {
             <a className="btn ghost small" href={'/api/scans/' + id + '/pdf'}>Download PDF</a>
             {owner && <a className="btn ghost small" href={'/api/scans/' + id + '/csv'}>Download CSV</a>}
             {owner && <RescanButton scanId={id} />}
+            {owner && <GithubIssueButton scanId={id} />}
           </div>
         )}
 
@@ -198,7 +199,8 @@ export default async function ScanPage({ params, searchParams }) {
 
         {!owner && (
           <div className="noticebox" style={{ marginTop: 32 }}>
-            This is the read-only client view. The scan owner sees triage controls here.
+            This is the read-only client view. The scan owner sees triage controls here.{' '}
+            <a href={'/login?next=/s/' + id}>Sign in to save this scan and schedule re-scans</a>.
           </div>
         )}
       </div>
