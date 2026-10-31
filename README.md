@@ -23,6 +23,14 @@ npm run dev
 
 Tests: `npm test` (node test runner over `test/`).
 
+## Deploy
+
+Full click-by-click deploy + verification checklist: `DEPLOY.md`.
+Summary: create a Supabase project, run the two migrations, set the six
+env vars on Vercel (two of them are secrets you generate), import the
+repo on Vercel, audit the Supabase site URL before the first sign-in,
+then run the verification sweep. Nothing code-side remains.
+
 ## Migrations
 
 Run in the Supabase SQL editor, in order:
