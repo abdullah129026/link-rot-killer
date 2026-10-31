@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { dbFromEnv, getScanWithSite } from '@/lib/db.js';
 import { ownsScan, claimCookieName } from '@/lib/scan.js';
 import { sessionUser } from '@/lib/supabase-server.js';
@@ -7,7 +8,9 @@ import { sessionUser } from '@/lib/supabase-server.js';
 // unguessable id, stated explicitly.
 
 export function json(data, status = 200) {
-  return Response.json(data, { status });
+  // NextResponse, not Response: some routes set cookies on the result
+  // (the claim token), and a plain Response has no cookie jar.
+  return NextResponse.json(data, { status });
 }
 
 export function noDb() {
