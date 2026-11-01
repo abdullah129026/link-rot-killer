@@ -3,7 +3,11 @@
 -- All access goes through service_role; every new table carries an
 -- explicit minimal grant. Never grant to anon or authenticated.
 
-create extension if not exists pgcrypto;
+-- Fresh Supabase projects install extensions into the `extensions` schema
+-- by default; the github-token RPCs below call pgp_sym_encrypt unqualified
+-- with search_path = public, so pin pgcrypto to public here. A project that
+-- already moved it stays untouched (if not exists skips).
+create extension if not exists pgcrypto with schema public;
 
 -- Sites being scanned. owner_user_id is null for anonymous scans.
 create table public.sites (
